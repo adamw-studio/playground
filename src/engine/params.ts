@@ -1,5 +1,5 @@
 export type MirrorMode = 'none' | 'x' | 'y' | 'xy';
-export type ViewMode = 'original' | 'vector' | 'split';
+export type ViewMode = 'original' | 'vector' | 'split' | 'orbs';
 export type TraceMode = 'mono' | 'color';
 export type RenderStyle = 'fill' | 'line' | 'both';
 
@@ -186,7 +186,7 @@ export type Frame = Record<SprungKey, number> & {
   time: number;
 };
 
-export function quantize(value: number, def: NumericDef): number {
+export function quantize(value: number, def: Pick<NumericDef, 'min' | 'max' | 'step' | 'precision'>): number {
   const clamped = Math.min(def.max, Math.max(def.min, value));
   const stepped = Math.round(clamped / def.step) * def.step;
   return Number(stepped.toFixed(def.precision));

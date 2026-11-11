@@ -4,7 +4,7 @@ import { formatNumber } from './format';
 import { useSpring } from './useSpring';
 
 interface Props {
-  def: NumericDef;
+  def: Omit<NumericDef, 'key'>;
   value: number;
   defaultValue: number;
   onChange: (value: number) => void;

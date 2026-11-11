@@ -76,6 +76,11 @@ button {
   clip-path: inset(0 0 0 100%);
 }
 
+.layer-orb {
+  opacity: 0;
+  visibility: hidden;
+}
+
 /* split divider: a hairline with a small grip */
 .divider {
   position: absolute;
@@ -220,7 +225,7 @@ button {
 
 .panel-mode .segmented {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: var(--track);
   border-radius: 9px;
   padding: 2px;
@@ -617,4 +622,130 @@ button {
   .caption {
     display: none;
   }
+}
+
+/* ---------- gradient orbs ---------- */
+
+.presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--track);
+  padding: 7px 8px 8px;
+  text-align: left;
+  font: 10.5px/1 var(--mono);
+  color: var(--ink-2);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.35s var(--spring);
+}
+
+.preset:hover {
+  background: var(--track-hover);
+  color: var(--ink);
+}
+
+.preset:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+.preset.on {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.preset i {
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.preset.is-saved {
+  position: relative;
+  padding: 0;
+}
+
+.preset-apply {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 7px 8px 8px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.preset-delete {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink-2);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.preset.is-saved:hover .preset-delete {
+  opacity: 1;
+}
+
+.palette-row {
+  gap: 10px;
+}
+
+.swatches {
+  display: flex;
+  gap: 5px;
+}
+
+.swatch {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.35s var(--spring);
+}
+
+.swatch:hover {
+  transform: scale(1.15);
+}
+
+.swatch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+}
+
+.notice-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font: 11px/1.4 var(--mono);
+  color: var(--accent);
 }

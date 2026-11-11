@@ -237,8 +237,10 @@ export class StudyEngine {
       (rasterAnimated || sp.organic.x > 0 || sp.breathe.x > 0 || (p.spin !== 0 && p.speed > 0));
 
     // Hidden layers only redraw on parameter changes, never for animation.
-    const drawRaster = this.source && (this.dirty || (p.view !== 'vector' && (moving || rasterAnimated)));
-    const vectorLive = p.view !== 'original' && (moving || vectorAnimated);
+    const rasterShown = p.view === 'original' || p.view === 'split';
+    const vectorShown = p.view === 'vector' || p.view === 'split';
+    const drawRaster = this.source && (this.dirty || (rasterShown && (moving || rasterAnimated)));
+    const vectorLive = vectorShown && (moving || vectorAnimated);
     // Animated frames may run at reduced resolution; anything still renders sharp once motion settles.
     const settling = !vectorLive && this.sizeVector(1);
     if (vectorLive && this.sizeVector(QUALITY_STEPS[this.quality])) this.dirty = true;
