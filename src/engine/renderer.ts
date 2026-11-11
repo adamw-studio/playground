@@ -1,4 +1,5 @@
 import type { MirrorMode } from './params';
+import type { Source } from './source';
 import { hash2, signedNoise } from './noise';
 
 /** Everything the renderer needs for one frame. All lengths are normalized to the frame. */
@@ -60,8 +61,27 @@ export class Renderer {
   private unitKey = '';
   private layerA = makeCanvas();
   private layerB = makeCanvas();
+  private background: string | null = BACKGROUND;
 
-  render(target: CanvasRenderingContext2D, image: HTMLImageElement, s: FrameState, W: number, H: number) {
+  private clear(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    if (this.background) {
+      ctx.fillStyle = this.background;
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      ctx.clearRect(0, 0, w, h);
+    }
+  }
+
+  /** `background: null` leaves uncovered pixels transparent (used for transparent PNG export). */
+  render(
+    target: CanvasRenderingContext2D,
+    image: Source,
+    s: FrameState,
+    W: number,
+    H: number,
+    background: string | null = BACKGROUND,
+  ) {
+    this.background = background;
     const m = Math.ceil(Math.max(W, H) * MARGIN);
     const bw = W + 2 * m;
     const bh = H + 2 * m;
@@ -80,22 +100,23 @@ export class Renderer {
   }
 
   /** One repeat cell (2×2 when mirrored), sized to its on-screen footprint. */
-  private buildUnit(image: HTMLImageElement, mirror: MirrorMode, tileW: number, tileH: number) {
+  private buildUnit(image: Source, mirror: MirrorMode, tileW: number, tileH: number) {
     const mx = mirror === 'x' || mirror === 'xy';
     const my = mirror === 'y' || mirror === 'xy';
     const uw = clamp(Math.round(tileW), 1, mx ? MAX_UNIT / 2 : MAX_UNIT);
     const uh = clamp(Math.round(tileH), 1, my ? MAX_UNIT / 2 : MAX_UNIT);
-    const key = `${uw}|${uh}|${mirror}|${image.src}`;
+    const key = `${uw}|${uh}|${mirror}|${image.id}`;
     if (key !== this.unitKey) {
       this.unitKey = key;
       ensureSize(this.unit, uw * (mx ? 2 : 1), uh * (my ? 2 : 1));
       const u = context(this.unit);
+      u.clearRect(0, 0, this.unit.width, this.unit.height);
       for (let qy = 0; qy < (my ? 2 : 1); qy++) {
         for (let qx = 0; qx < (mx ? 2 : 1); qx++) {
           u.save();
           u.translate(qx ? 2 * uw : 0, qy ? 2 * uh : 0);
           u.scale(qx ? -1 : 1, qy ? -1 : 1);
-          u.drawImage(image, 0, 0, uw, uh);
+          u.drawImage(image.canvas, 0, 0, uw, uh);
           u.restore();
         }
       }
@@ -105,7 +126,7 @@ export class Renderer {
 
   private drawPattern(
     ctx: CanvasRenderingContext2D,
-    image: HTMLImageElement,
+    image: Source,
     s: FrameState,
     W: number,
     H: number,
@@ -114,8 +135,7 @@ export class Renderer {
     bh: number,
   ) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = BACKGROUND;
-    ctx.fillRect(0, 0, bw, bh);
+    this.clear(ctx, bw, bh);
 
     const blockW = W * s.scale;
     const blockH = H * s.scale;
@@ -151,8 +171,7 @@ export class Renderer {
     bw: number,
     bh: number,
   ) {
-    ctx.fillStyle = BACKGROUND;
-    ctx.fillRect(0, 0, bw, bh);
+    this.clear(ctx, bw, bh);
 
     const stripH = Math.max(1, Math.round(H / 520));
     const limit = m * 0.98;
@@ -187,8 +206,7 @@ export class Renderer {
     m: number,
   ) {
     ctx.imageSmoothingQuality = 'high';
-    ctx.fillStyle = BACKGROUND;
-    ctx.fillRect(0, 0, W, H);
+    this.clear(ctx, W, H);
 
     const cols = Math.max(1, Math.round(s.gridCols));
     const rows = Math.max(1, Math.round(s.gridRows));

@@ -13,9 +13,9 @@ export function Readout({ label, value, unit }: { label: string; value: ReactNod
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, children, muted }: { label: ReactNode; children: ReactNode; muted?: boolean }) {
   return (
-    <div className="row">
+    <div className={`row${muted ? ' is-muted' : ''}`}>
       <span className="row-label">{label}</span>
       {children}
     </div>
@@ -89,6 +89,16 @@ export const Icon = {
   reset: () => (
     <svg width="10" height="10" viewBox="0 0 10 10">
       <path d="M2.4 5a2.6 2.6 0 1 0 .8-1.9M2.4 1.9v1.6H4" {...stroke} strokeLinejoin="round" />
+    </svg>
+  ),
+  upload: () => (
+    <svg width="10" height="10" viewBox="0 0 10 10">
+      <path d="M5 7.2v-5M2.8 4.2 5 2l2.2 2.2M2.4 8.4h5.2" {...stroke} strokeLinejoin="round" />
+    </svg>
+  ),
+  trace: () => (
+    <svg width="10" height="10" viewBox="0 0 10 10">
+      <path d="M2 7.6 4 3.4l2 2.6 2-3.6" {...stroke} strokeLinejoin="round" />
     </svg>
   ),
   download: () => (

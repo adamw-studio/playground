@@ -1,5 +1,8 @@
-import { NUMERIC, SPRUNG_KEYS, type Params, type SprungKey } from './params';
-import { Renderer, type FrameState } from './renderer';
+import { NUMERIC, SPRUNG_KEYS, type Frame, type Params, type SprungKey } from './params';
+import { BACKGROUND, Renderer } from './renderer';
+import type { Source } from './source';
+import type { VectorArt } from '../vector/types';
+import { VectorRenderer } from '../vector/vectorRenderer';
 
 interface Spring {
   x: number;
@@ -12,15 +15,19 @@ export interface EngineStats {
   total: number;
   peakVelocity: number;
   frameMs: number;
+  vectorMs: number;
+  copies: number;
   width: number;
   height: number;
 }
 
 const SUBSTEP = 1 / 240;
+/** Long-side size of vector PNG exports. */
+const VECTOR_EXPORT_SIDE = 5600;
 
 /**
- * Owns the canvas and the requestAnimationFrame loop. The UI only ever hands it target
- * params; springs ease the rendered values toward them, and frames are skipped when idle.
+ * Shared motion core. Owns the clock and the springs, and drives two independent
+ * renderers: the raster study and the vector study. The UI only hands it target params.
  */
 export class StudyEngine {
   readonly stats: EngineStats = {
@@ -29,13 +36,18 @@ export class StudyEngine {
     total: SPRUNG_KEYS.length,
     peakVelocity: 0,
     frameMs: 0,
+    vectorMs: 0,
+    copies: 0,
     width: 0,
     height: 0,
   };
 
-  private ctx: CanvasRenderingContext2D;
-  private renderer = new Renderer();
-  private image: HTMLImageElement | null = null;
+  private rasterCtx: CanvasRenderingContext2D;
+  private vectorCtx: CanvasRenderingContext2D;
+  private raster = new Renderer();
+  private vector = new VectorRenderer();
+  private source: Source | null = null;
+  private art: VectorArt | null = null;
   private params: Params;
   private springs = {} as Record<SprungKey, Spring>;
   private time = 0;
@@ -44,18 +56,26 @@ export class StudyEngine {
   private dirty = true;
 
   constructor(
-    private canvas: HTMLCanvasElement,
+    private rasterCanvas: HTMLCanvasElement,
+    private vectorCanvas: HTMLCanvasElement,
     params: Params,
   ) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas 2D unavailable');
-    this.ctx = ctx;
+    const r = rasterCanvas.getContext('2d');
+    const v = vectorCanvas.getContext('2d');
+    if (!r || !v) throw new Error('Canvas 2D unavailable');
+    this.rasterCtx = r;
+    this.vectorCtx = v;
     this.params = params;
     this.snap();
   }
 
-  setImage(image: HTMLImageElement) {
-    this.image = image;
+  setSource(source: Source) {
+    this.source = source;
+    this.dirty = true;
+  }
+
+  setArt(art: VectorArt | null) {
+    this.art = art;
     this.dirty = true;
   }
 
@@ -67,10 +87,12 @@ export class StudyEngine {
   resize(width: number, height: number) {
     this.stats.width = width;
     this.stats.height = height;
-    if (this.canvas.width === width && this.canvas.height === height) return;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.dirty = true;
+    for (const canvas of [this.rasterCanvas, this.vectorCanvas]) {
+      if (canvas.width === width && canvas.height === height) continue;
+      canvas.width = width;
+      canvas.height = height;
+      this.dirty = true;
+    }
   }
 
   /** Jump every spring to its target and rewind the clock. */
@@ -89,41 +111,58 @@ export class StudyEngine {
     cancelAnimationFrame(this.raf);
   }
 
-  async exportPNG(): Promise<Blob | null> {
-    const image = this.image;
-    if (!image) return null;
+  /** The raster study at source resolution. */
+  async exportRasterPNG(transparent: boolean): Promise<Blob | null> {
+    const source = this.source;
+    if (!source) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
+    canvas.width = source.width;
+    canvas.height = source.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    new Renderer().render(ctx, image, this.frameState(), canvas.width, canvas.height);
+    new Renderer().render(ctx, source, this.frame(), canvas.width, canvas.height, transparent ? null : BACKGROUND);
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  /** The vector study rasterized at high resolution — vectors are resolution independent. */
+  async exportVectorPNG(transparent: boolean): Promise<Blob | null> {
+    const art = this.art;
+    if (!art) return null;
+    const { w, h } = this.exportSize(art, VECTOR_EXPORT_SIDE);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    this.vector.render(ctx, art, this.frame(), w, h, transparent ? null : BACKGROUND);
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  /** The visible vector composition — every transform and distortion baked into path data. */
+  exportSVG(transparent: boolean): string | null {
+    const art = this.art;
+    if (!art) return null;
+    return this.vector.toSVG(art, this.frame(), art.width, art.height, transparent ? null : BACKGROUND);
+  }
+
+  vectorExportSize(): { w: number; h: number } | null {
+    return this.art ? this.exportSize(this.art, VECTOR_EXPORT_SIDE) : null;
+  }
+
+  private exportSize(art: VectorArt, side: number) {
+    const k = side / Math.max(art.width, art.height);
+    return { w: Math.round(art.width * k), h: Math.round(art.height * k) };
   }
 
   private snap() {
     for (const key of SPRUNG_KEYS) this.springs[key] = { x: this.params[key], v: 0 };
   }
 
-  private frameState(): FrameState {
-    const sp = this.springs;
-    return {
-      scale: sp.scale.x,
-      offsetX: sp.offsetX.x,
-      offsetY: sp.offsetY.x,
-      rotation: sp.rotation.x,
-      repeatX: sp.repeatX.x,
-      repeatY: sp.repeatY.x,
-      gridCols: sp.gridCols.x,
-      gridRows: sp.gridRows.x,
-      displacement: sp.displacement.x,
-      waveAmp: sp.waveAmp.x,
-      waveFreq: sp.waveFreq.x,
-      noise: sp.noise.x,
-      mirror: this.params.mirror,
-      wrap: this.params.wrap,
-      time: this.time,
-    };
+  private frame(): Frame {
+    const values = {} as Record<SprungKey, number>;
+    for (const key of SPRUNG_KEYS) values[key] = this.springs[key].x;
+    const p = this.params;
+    return { ...values, mirror: p.mirror, wrap: p.wrap, kaleido: p.kaleido, render: p.render, spin: p.spin, time: this.time };
   }
 
   /** Integrates all springs; returns how many are still moving. */
@@ -164,17 +203,34 @@ export class StudyEngine {
     const dt = Math.min((now - this.last) / 1000, 1 / 20);
     this.last = now;
 
-    const moving = this.step(dt);
-    const sp = this.springs;
-    const timeDriven = sp.waveAmp.x > 0 || sp.noise.x > 0 || sp.displacement.x > 0;
-    if (this.params.playing) this.time += dt * this.params.speed;
+    const moving = this.step(dt) > 0;
+    const p = this.params;
+    if (p.playing) this.time += dt * p.speed;
     this.stats.time = this.time;
 
-    if (!this.image || !(this.dirty || moving > 0 || (this.params.playing && timeDriven))) return;
+    const sp = this.springs;
+    const rasterAnimated = p.playing && (sp.waveAmp.x > 0 || sp.noise.x > 0 || sp.displacement.x > 0);
+    const vectorAnimated =
+      p.playing &&
+      (rasterAnimated || sp.organic.x > 0 || sp.breathe.x > 0 || (p.spin !== 0 && p.speed > 0));
 
-    const t0 = performance.now();
-    this.renderer.render(this.ctx, this.image, this.frameState(), this.canvas.width, this.canvas.height);
-    this.stats.frameMs = performance.now() - t0;
+    // Hidden layers only redraw on parameter changes, never for animation.
+    const drawRaster = this.source && (this.dirty || (p.view !== 'vector' && (moving || rasterAnimated)));
+    const drawVector = this.art && (this.dirty || (p.view !== 'original' && (moving || vectorAnimated)));
+    if (!drawRaster && !drawVector) return;
+
+    const frame = this.frame();
+    if (drawRaster) {
+      const t0 = performance.now();
+      this.raster.render(this.rasterCtx, this.source!, frame, this.rasterCanvas.width, this.rasterCanvas.height);
+      this.stats.frameMs = performance.now() - t0;
+    }
+    if (drawVector) {
+      const t0 = performance.now();
+      this.vector.render(this.vectorCtx, this.art!, frame, this.vectorCanvas.width, this.vectorCanvas.height, BACKGROUND);
+      this.stats.vectorMs = performance.now() - t0;
+      this.stats.copies = this.vector.lastStats.copies;
+    }
     this.dirty = false;
   };
 }

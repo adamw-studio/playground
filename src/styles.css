@@ -50,16 +50,136 @@ button {
   align-items: center;
 }
 
-.canvas {
-  display: block;
+.viewport {
+  position: relative;
   border-radius: 10px;
+  overflow: hidden;
   background: var(--canvas-bg);
   cursor: grab;
   touch-action: none;
+  isolation: isolate;
 }
 
-.canvas:active {
+.viewport:active {
   cursor: grabbing;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.layer-vector {
+  clip-path: inset(0 0 0 100%);
+}
+
+/* split divider: a hairline with a small grip */
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 17px;
+  margin-left: -8px;
+  cursor: ew-resize;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.divider.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+}
+
+.divider i {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 9px;
+  height: 28px;
+  margin-top: -14px;
+  border-radius: 5px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.35s var(--spring);
+}
+
+.divider:hover i,
+.divider:active i {
+  transform: scaleY(1.25);
+}
+
+.tag,
+.status {
+  position: absolute;
+  bottom: 10px;
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(6px);
+  padding: 5px 7px;
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.tag-left {
+  left: 10px;
+}
+
+.tag-right {
+  right: 10px;
+}
+
+.status {
+  top: 10px;
+  bottom: auto;
+  left: 10px;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.4s var(--spring);
+}
+
+.status.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.drop-hint {
+  position: absolute;
+  inset: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--ink-3);
+  border-radius: 7px;
+  background: rgba(251, 251, 250, 0.72);
+  font: 10.5px/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.viewport.is-dropping .drop-hint {
+  opacity: 1;
 }
 
 .caption {
@@ -91,6 +211,42 @@ button {
 
 .panel::-webkit-scrollbar {
   display: none;
+}
+
+.panel-mode {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-mode .segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--track);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.panel-mode .segmented button {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 0;
+  border-radius: 7px;
+}
+
+.panel-mode .segmented button.on {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.section-note {
+  margin-left: 8px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--ink-3);
 }
 
 .section + .section {
@@ -311,6 +467,18 @@ button {
   outline: 1px solid var(--fill);
 }
 
+/* parameters that don't apply to the current view stay usable, just quieter */
+.slider.is-muted,
+.row.is-muted {
+  opacity: 0.42;
+  transition: opacity 0.25s ease;
+}
+
+.slider.is-muted:hover,
+.row.is-muted:hover {
+  opacity: 0.7;
+}
+
 /* ---------- readout rows ---------- */
 
 .row {
@@ -336,6 +504,27 @@ button {
 .row-value .unit {
   margin-left: 0.6ch;
   color: var(--ink-3);
+}
+
+.sliders-after-row {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.sliders-after-row + .row {
+  border-top: 0;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.truncate {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .segmented {

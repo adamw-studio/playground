@@ -8,6 +8,8 @@ interface Props {
   value: number;
   defaultValue: number;
   onChange: (value: number) => void;
+  /** Dimmed when the parameter does not apply to the current view or mode. */
+  muted?: boolean;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -16,7 +18,7 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
  * Label left, mono value right; the gray fill is the value. Drag anywhere on the bar,
  * click the number to type, double-click the label to reset. The fill eases on a spring.
  */
-export function ParamSlider({ def, value, defaultValue, onChange }: Props) {
+export function ParamSlider({ def, value, defaultValue, onChange, muted = false }: Props) {
   const bar = useRef<HTMLDivElement>(null);
   const fill = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -64,7 +66,7 @@ export function ParamSlider({ def, value, defaultValue, onChange }: Props) {
   return (
     <div
       ref={bar}
-      className={`slider${dragging ? ' is-dragging' : ''}${value !== defaultValue ? ' is-changed' : ''}`}
+      className={`slider${dragging ? ' is-dragging' : ''}${value !== defaultValue ? ' is-changed' : ''}${muted ? ' is-muted' : ''}`}
       role="slider"
       tabIndex={0}
       aria-label={def.label}

@@ -5,11 +5,13 @@ import { GENTLE } from './useSpring';
 interface Props {
   title: string;
   defaultOpen?: boolean;
+  /** Short mono note beside the title, e.g. which view the section affects. */
+  note?: string;
   children: ReactNode;
 }
 
 /** Collapsible group whose height follows a gently underdamped spring. */
-export function Section({ title, defaultOpen = true, children }: Props) {
+export function Section({ title, defaultOpen = true, note, children }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -49,7 +51,10 @@ export function Section({ title, defaultOpen = true, children }: Props) {
   return (
     <section className={`section${open ? ' is-open' : ''}`}>
       <header className="section-head" onClick={() => setOpen((o) => !o)}>
-        <span>{title}</span>
+        <span>
+          {title}
+          {note && <em className="section-note">{note}</em>}
+        </span>
         <RoundButton
           label={`${open ? 'Collapse' : 'Expand'} ${title}`}
           aria-expanded={open}
