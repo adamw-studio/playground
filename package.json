@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "heic-to": "^1.6.7",
     "imagetracerjs": "^1.2.6",
     "react": "18.3.1",
     "react-dom": "18.3.1"

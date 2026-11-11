@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { StudyEngine, type EngineStats } from './engine/engine';
 import { DEFAULTS, NUMERIC, TRACE_KEYS, quantize, type Params } from './engine/params';
-import { ACCEPTED_TYPES, loadSourceFile, loadSourceUrl, type Source } from './engine/source';
+import { ACCEPT, isSupportedImage, loadSourceFile, loadSourceUrl, type Source } from './engine/source';
 import { Tracer } from './vector/tracer';
 import type { TraceOptions, VectorArt } from './vector/types';
 import { Panel } from './ui/Panel';
@@ -19,6 +19,7 @@ function useEngineStats(engine: React.RefObject<StudyEngine | null>): EngineStat
     frameMs: 0,
     vectorMs: 0,
     copies: 0,
+    quality: 1,
     width: 0,
     height: 0,
   });
@@ -186,12 +187,16 @@ export default function App() {
 
   const onFile = useCallback(
     (file: File) => {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        flash('use a jpg, png or webp image');
+      if (!isSupportedImage(file)) {
+        flash('use a jpg, png, webp or heic image');
         return;
       }
+      if (/\.hei[cf]$/i.test(file.name) || file.type.includes('hei')) setNotice('decoding heic…');
       loadSourceFile(file)
-        .then(applySource)
+        .then((src) => {
+          setNotice(null);
+          applySource(src);
+        })
         .catch(() => flash('could not read that image'));
     },
     [applySource, flash],
@@ -289,7 +294,7 @@ export default function App() {
       <input
         ref={fileRef}
         type="file"
-        accept={ACCEPTED_TYPES.join(',')}
+        accept={ACCEPT}
         hidden
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];

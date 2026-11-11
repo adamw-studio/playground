@@ -101,7 +101,7 @@ export function Panel(props: Props) {
                 <Icon.reset />
               </RoundButton>
             )}
-            <RoundButton label="Upload image (JPG, PNG, WebP)" onClick={props.onUpload}>
+            <RoundButton label="Upload image (JPG, PNG, WebP, HEIC)" onClick={props.onUpload}>
               <Icon.upload />
             </RoundButton>
           </span>
@@ -201,7 +201,7 @@ export function Panel(props: Props) {
         <Readout
           label="frame vector"
           value={vector.ready ? `${formatNumber(stats.vectorMs, 2)}` : '—'}
-          unit={vector.ready ? `ms · ${stats.copies}×` : undefined}
+          unit={vector.ready ? `ms · ${stats.copies}× · ${Math.round(stats.quality * 100)}%` : undefined}
         />
         <Field label="reset motion">
           <RoundButton label="Reset motion" onClick={props.onResetMotion}>

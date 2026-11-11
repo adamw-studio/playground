@@ -17,11 +17,15 @@ export interface EngineStats {
   frameMs: number;
   vectorMs: number;
   copies: number;
+  /** Vector layer resolution as a fraction of display resolution. */
+  quality: number;
   width: number;
   height: number;
 }
 
 const SUBSTEP = 1 / 240;
+/** Internal resolution steps for the vector layer while it animates under heavy load. */
+const QUALITY_STEPS = [1, 0.8, 0.65, 0.5];
 /** Long-side size of vector PNG exports. */
 const VECTOR_EXPORT_SIDE = 5600;
 
@@ -38,6 +42,7 @@ export class StudyEngine {
     frameMs: 0,
     vectorMs: 0,
     copies: 0,
+    quality: 1,
     width: 0,
     height: 0,
   };
@@ -54,6 +59,7 @@ export class StudyEngine {
   private raf = 0;
   private last = 0;
   private dirty = true;
+  private quality = 0;
 
   constructor(
     private rasterCanvas: HTMLCanvasElement,
@@ -87,12 +93,28 @@ export class StudyEngine {
   resize(width: number, height: number) {
     this.stats.width = width;
     this.stats.height = height;
-    for (const canvas of [this.rasterCanvas, this.vectorCanvas]) {
-      if (canvas.width === width && canvas.height === height) continue;
-      canvas.width = width;
-      canvas.height = height;
-      this.dirty = true;
+    if (this.rasterCanvas.width !== width || this.rasterCanvas.height !== height) {
+      this.rasterCanvas.width = width;
+      this.rasterCanvas.height = height;
     }
+    this.sizeVector(1);
+    this.dirty = true;
+  }
+
+  /** Sets the vector canvas's backing size as a fraction of the display size (CSS size is unchanged). */
+  private sizeVector(fraction: number): boolean {
+    const w = Math.max(1, Math.round(this.stats.width * fraction));
+    const h = Math.max(1, Math.round(this.stats.height * fraction));
+    if (this.vectorCanvas.width === w && this.vectorCanvas.height === h) return false;
+    this.vectorCanvas.width = w;
+    this.vectorCanvas.height = h;
+    return true;
+  }
+
+  /** Steps resolution down when animated frames are slow, and back up when there is headroom. */
+  private adapt(ms: number) {
+    if (ms > 26 && this.quality < QUALITY_STEPS.length - 1) this.quality++;
+    else if (ms < 9 && this.quality > 0) this.quality--;
   }
 
   /** Jump every spring to its target and rewind the clock. */
@@ -134,7 +156,7 @@ export class StudyEngine {
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    this.vector.render(ctx, art, this.frame(), w, h, transparent ? null : BACKGROUND);
+    new VectorRenderer().render(ctx, art, this.frame(), w, h, transparent ? null : BACKGROUND, true);
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
@@ -216,7 +238,11 @@ export class StudyEngine {
 
     // Hidden layers only redraw on parameter changes, never for animation.
     const drawRaster = this.source && (this.dirty || (p.view !== 'vector' && (moving || rasterAnimated)));
-    const drawVector = this.art && (this.dirty || (p.view !== 'original' && (moving || vectorAnimated)));
+    const vectorLive = p.view !== 'original' && (moving || vectorAnimated);
+    // Animated frames may run at reduced resolution; anything still renders sharp once motion settles.
+    const settling = !vectorLive && this.sizeVector(1);
+    if (vectorLive && this.sizeVector(QUALITY_STEPS[this.quality])) this.dirty = true;
+    const drawVector = this.art && (this.dirty || vectorLive || settling);
     if (!drawRaster && !drawVector) return;
 
     const frame = this.frame();
@@ -230,6 +256,9 @@ export class StudyEngine {
       this.vector.render(this.vectorCtx, this.art!, frame, this.vectorCanvas.width, this.vectorCanvas.height, BACKGROUND);
       this.stats.vectorMs = performance.now() - t0;
       this.stats.copies = this.vector.lastStats.copies;
+      if (vectorLive) this.adapt(this.stats.vectorMs);
+      else this.quality = 0;
+      this.stats.quality = this.vectorCanvas.width / Math.max(1, this.stats.width);
     }
     this.dirty = false;
   };
