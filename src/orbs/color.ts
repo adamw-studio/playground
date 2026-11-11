@@ -42,6 +42,8 @@ export function oklabToRgb([L, a, b]: Lab): RGB {
 
 export const hexToOklab = (hex: string) => rgbToOklab(hexToRgb(hex));
 
+export const hexToLinear = (hex: string): RGB => hexToRgb(hex).map(toLinear) as RGB;
+
 /** Small deterministic PRNG (mulberry32). */
 export function rng(seed: number) {
   let a = (seed * 2654435761) >>> 0;

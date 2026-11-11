@@ -12,6 +12,7 @@ import { extractPalette, randomPalette, rng } from './orbs/color';
 import type { OrbParams } from './orbs/params';
 import {
   BUILT_IN_PRESETS,
+  LIQUID_PRESETS,
   ORB_DEFAULTS,
   applyPreset,
   loadSavedPresets,
@@ -469,7 +470,7 @@ export default function App() {
             orb={orb}
             palette={orbPalette}
             stats={orbStats}
-            presets={{ builtIn: BUILT_IN_PRESETS, saved: savedPresets }}
+            presets={{ builtIn: BUILT_IN_PRESETS, liquid: LIQUID_PRESETS, saved: savedPresets }}
             activePreset={activePreset}
             sourceName={source?.name ?? '—'}
             error={orbEngineRef.current?.error ?? null}
@@ -495,6 +496,13 @@ export default function App() {
               setActivePreset(null);
             }}
             onResetField={() => orbEngineRef.current?.resetField()}
+            onResetEquilibrium={() => orbEngineRef.current?.resetEquilibrium()}
+            onMaterial={(m) => {
+              // Each material starts from its signature preset; tweaks begin there.
+              const preset = m === 'liquid' ? LIQUID_PRESETS[1] : BUILT_IN_PRESETS[0];
+              setOrb((o) => applyPreset(o, preset));
+              setActivePreset(preset.name);
+            }}
             onUpload={() => fileRef.current?.click()}
             onExportPNG={onOrbExportPNG}
             onExportWebM={onOrbExportWebM}

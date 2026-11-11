@@ -2,6 +2,7 @@ import type { OrbParams } from './params';
 
 /** The shared base every preset starts from. */
 export const ORB_DEFAULTS: OrbParams = {
+  material: 'gradient',
   radius: 0.36,
   aspect: 1,
   edge: 0.06,
@@ -42,6 +43,46 @@ export const ORB_DEFAULTS: OrbParams = {
   sizeVariance: 0.35,
   independent: true,
   seed: 7,
+  ior: 1.45,
+  roughness: 0.12,
+  transmission: 0.92,
+  fresnel: 1,
+  dispersion: 0.2,
+  density: 0.35,
+  clearcoat: 0.5,
+  normalDistort: 0.04,
+  fill: 0,
+  viscosity: 0.5,
+  meniscus: 0.35,
+  waveAmp: 0.35,
+  waveFreq: 2.4,
+  slosh: 0.5,
+  liquidAbsorb: 1.2,
+  tension: 0.6,
+  elasticity: 0.5,
+  wobble: 0.12,
+  wobbleFreq: 1.8,
+  stretchX: 1,
+  stretchY: 1,
+  breathing: 0.25,
+  restSpeed: 0.35,
+  reflection: 1,
+  specular: 0.6,
+  rim: 0.5,
+  edgeLight: 0.8,
+  bloom: 0.12,
+  exposure: 0,
+  backdrop: 'studio',
+  horizon: 0.15,
+  band: 0.4,
+  grid: 0,
+  beam: 0,
+  glassTint: '#eef1f6',
+  liquidColor: '#5a7a92',
+  rimColor: '#ffffff',
+  envTop: '#2a3044',
+  envHorizon: '#c9d4e4',
+  envBottom: '#0d0f14',
 };
 
 export interface OrbPreset {
@@ -102,6 +143,74 @@ export const BUILT_IN_PRESETS: OrbPreset[] = [
   },
 ];
 
+/** Liquid-glass materials. Same parameterized renderer; only the values differ. */
+export const LIQUID_PRESETS: OrbPreset[] = [
+  {
+    name: 'frosted liquid',
+    params: {
+      material: 'liquid',
+      envTop: '#eceef2', envHorizon: '#ffffff', envBottom: '#7f838d', horizon: 0.3, band: 0.15, grid: 0.6, beam: 0,
+      glassTint: '#e9ebf0', ior: 1.22, roughness: 0.42, transmission: 0.8, fresnel: 0.8, dispersion: 0.3, density: 0.3,
+      clearcoat: 0.35, normalDistort: 0.04,
+      fill: 0, stretchX: 1.6, stretchY: 0.9, wobble: 0.22, wobbleFreq: 1.5, tension: 0.7, breathing: 0.35,
+      reflection: 0.75, specular: 0.45, rim: 0.2, rimColor: '#ffffff', edgeLight: 1.0, bloom: 0, exposure: 0.05,
+      grain: 0.05, dither: 0, radius: 0.27,
+    },
+  },
+  {
+    name: 'mercury water',
+    params: {
+      material: 'liquid',
+      envTop: '#1a2029', envHorizon: '#9db3c4', envBottom: '#040507', horizon: 0.5, band: 0, grid: 0, beam: 0.65,
+      glassTint: '#cfd8e0', ior: 1.33, roughness: 0.38, transmission: 0.6, fresnel: 1.0, dispersion: 0.08, density: 0.25,
+      clearcoat: 0.4, normalDistort: 0.03,
+      fill: 0.5, meniscus: 0.5, waveAmp: 0.5, waveFreq: 2.2, slosh: 0.55, viscosity: 0.55,
+      liquidColor: '#4c6a82', liquidAbsorb: 1.5,
+      wobble: 0.06, tension: 0.8, breathing: 0.2,
+      reflection: 0.9, specular: 0.5, rim: 0.55, rimColor: '#dfe8f2', edgeLight: 0.7, bloom: 0.3, exposure: 0.1,
+      grain: 0.06, dither: 0,
+    },
+  },
+  {
+    name: 'sunset refraction',
+    params: {
+      material: 'liquid',
+      envTop: '#2b3356', envHorizon: '#ffb085', envBottom: '#0e0c14', horizon: 0.0, band: 0.9, grid: 0, beam: 0,
+      glassTint: '#f6f3f0', ior: 1.9, roughness: 0.03, transmission: 1, fresnel: 1.1, dispersion: 0.15, density: 0.08,
+      clearcoat: 0.8, normalDistort: 0,
+      fill: 0, wobble: 0.04, tension: 0.9, breathing: 0.15,
+      reflection: 1, specular: 0.1, rim: 0.85, rimColor: '#ffc6a2', edgeLight: 1.3, bloom: 0.08, exposure: 0,
+      grain: 0.04, dither: 0, radius: 0.4,
+    },
+  },
+  {
+    name: 'chromatic plasma',
+    params: {
+      material: 'liquid',
+      envTop: '#020205', envHorizon: '#3d6bff', envBottom: '#000000', horizon: 0.02, band: 0, grid: 0, beam: 0,
+      glassTint: '#ffffff', ior: 1.7, roughness: 0.06, transmission: 1, fresnel: 1.4, dispersion: 0.95, density: 0.1,
+      clearcoat: 0.3, normalDistort: 0,
+      fill: 0.38, meniscus: 0.4, waveAmp: 0.35, waveFreq: 1.8, slosh: 0.45, viscosity: 0.4,
+      liquidColor: '#ff9be0', liquidAbsorb: 0.8,
+      wobble: 0.1, tension: 0.6, breathing: 0.3,
+      reflection: 0.8, specular: 0.15, rim: 2, rimColor: '#ff6a24', edgeLight: 1.6, bloom: 0.8, exposure: 0.3,
+      grain: 0.28, dither: 0,
+    },
+  },
+  {
+    name: 'electric glass',
+    params: {
+      material: 'liquid',
+      envTop: '#000000', envHorizon: '#62d6ff', envBottom: '#000000', horizon: 0.2, band: 0, grid: 0, beam: 0,
+      glassTint: '#1d48ff', ior: 1.6, roughness: 0.08, transmission: 0.88, fresnel: 1.3, dispersion: 0.25, density: 2.2,
+      clearcoat: 0.9, normalDistort: 0.05,
+      fill: 0, wobble: 0.08, tension: 0.7, breathing: 0.2,
+      reflection: 1.4, specular: 0.9, rim: 1.0, rimColor: '#3fe0ff', edgeLight: 1.0, bloom: 0.22, exposure: 0.15,
+      grain: 0.04, dither: 0,
+    },
+  },
+];
+
 export const applyPreset = (current: OrbParams, preset: OrbPreset): OrbParams => ({
   ...ORB_DEFAULTS,
   // Composition and playback are the user's working context; presets only restyle.
@@ -113,6 +222,7 @@ export const applyPreset = (current: OrbParams, preset: OrbPreset): OrbParams =>
   playing: current.playing,
   imageField: current.imageField,
   imageInfluence: current.imageInfluence,
+  backdrop: current.backdrop,
   ...preset.params,
   paletteSource: 'manual',
 });
